@@ -1,0 +1,166 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Assign Delivery - Courier Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1 class="h3 mb-0">Assign Delivery</h1>
+            <a href="{% url 'admin_orders' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Orders
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0">Assign Delivery Boy to Order {{ order.barcode }}</h6>
+            </div>
+            <div class="card-body">
+                <!-- Order Details -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>Order Details</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Barcode:</strong></td>
+                                <td><code>{{ order.barcode }}</code></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Customer:</strong></td>
+                                <td>{{ order.customer.get_full_name|default:order.customer.username }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Receiver:</strong></td>
+                                <td>{{ order.receiver_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Amount:</strong></td>
+                                <td>${{ order.amount }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td>
+                                    <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'in_transit' %}primary{% elif order.status == 'cancelled' %}danger{% else %}secondary{% endif %}">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Delivery Address</h6>
+                        <address>
+                            {{ order.receiver_address|linebreaks }}
+                        </address>
+                    </div>
+                </div>
+
+                <hr>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="delivery_boy" class="form-label">Select Delivery Boy *</label>
+                        <select name="delivery_boy" id="delivery_boy" class="form-select" required>
+                            <option value="">Choose a delivery boy...</option>
+                            {% for delivery_boy in available_delivery_boys %}
+                            <option value="{{ delivery_boy.id }}">
+                                {{ delivery_boy.user.get_full_name|default:delivery_boy.user.username }}
+                                ({{ delivery_boy.vehicle_type }} - {{ delivery_boy.vehicle_number }})
+                                - Rating: {% if delivery_boy.rating %}{{ delivery_boy.rating|floatformat:1 }}{% else %}N/A{% endif %}
+                            </option>
+                            {% empty %}
+                            <option value="" disabled>No available delivery boys</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Only showing currently available delivery boys</div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'admin_orders' %}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-2"></i>Assign Delivery
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-select {
+    border-radius: 0.375rem;
+}
+
+address {
+    font-style: normal;
+    line-height: 1.5;
+}
+
+/* Mobile optimizations */
+@media (max-width: 767.98px) {
+    .card-body {
+        padding: 1rem;
+    }
+
+    .row.mb-4 .col-md-6 {
+        margin-bottom: 1.5rem;
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .d-flex.justify-content-between .btn {
+        align-self: flex-start;
+    }
+
+    .form-label {
+        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .card-header h6 {
+        font-size: 1rem;
+    }
+
+    h6 {
+        font-size: 1rem;
+    }
+
+    /* Stack form buttons on mobile */
+    .d-flex.justify-content-end {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .d-flex.justify-content-end .btn {
+        width: 100%;
+    }
+
+    /* Table styling on mobile */
+    .table.table-sm td,
+    .table.table-sm th {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .table.table-sm td strong {
+        font-size: 0.875rem;
+    }
+}
+</style>
+{% endblock %}

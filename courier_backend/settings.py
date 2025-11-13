@@ -100,7 +100,7 @@ ROOT_URLCONF = "courier_backend.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -177,7 +177,7 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"]
+# STATICFILES_DIRS = [BASE_DIR / "static"]  # Not needed for REST API
 
 # WhiteNoise settings
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
@@ -188,6 +188,11 @@ WHITENOISE_AUTOREFRESH = True
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Authentication settings
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/admin/dashboard/'
+LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 
 # Security settings for production

@@ -1,0 +1,359 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Deliveries - Courier Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-0">Delivery Management</h1>
+        <p class="text-muted">Monitor and manage delivery assignments</p>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="status" class="form-label">Status</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="assigned" {% if status_filter == 'assigned' %}selected{% endif %}>Assigned</option>
+                    <option value="picked_up" {% if status_filter == 'picked_up' %}selected{% endif %}>Picked Up</option>
+                    <option value="in_transit" {% if status_filter == 'in_transit' %}selected{% endif %}>In Transit</option>
+                    <option value="delivered" {% if status_filter == 'delivered' %}selected{% endif %}>Delivered</option>
+                    <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="search" class="form-label">Search</label>
+                <input type="text" name="search" id="search" class="form-control"
+                       placeholder="Search by barcode or delivery boy..."
+                       value="{{ search_query }}">
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">
+                    <i class="fas fa-search me-1"></i>Filter
+                </button>
+                <a href="{% url 'admin_deliveries' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Deliveries Table -->
+<div class="card">
+    <div class="card-header">
+        <h6 class="m-0">Deliveries ({{ page_obj.paginator.count }})</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Order</th>
+                        <th>Customer</th>
+                        <th>Delivery Boy</th>
+                        <th>Status</th>
+                        <th>Assigned</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for delivery in page_obj %}
+                    <tr>
+                        <td>
+                            <div>
+                                <code>{{ delivery.order.barcode }}</code>
+                                <br><small class="text-muted">${{ delivery.order.amount }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <strong>{{ delivery.order.customer.get_full_name|default:delivery.order.customer.username }}</strong>
+                                <br><small class="text-muted">{{ delivery.order.receiver_name }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <strong>{{ delivery.delivery_boy.user.get_full_name|default:delivery.delivery_boy.user.username }}</strong>
+                                <br><small class="text-muted">{{ delivery.delivery_boy.vehicle_type|title }} - {{ delivery.delivery_boy.vehicle_number }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-{% if delivery.status == 'delivered' %}success{% elif delivery.status == 'in_transit' %}primary{% elif delivery.status == 'picked_up' %}info{% elif delivery.status == 'failed' %}danger{% else %}secondary{% endif %}">
+                                {{ delivery.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div>
+                                {{ delivery.assigned_at|date:"M d, Y" }}
+                                <br><small class="text-muted">{{ delivery.assigned_at|time:"H:i" }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-info"
+                                        onclick="viewDelivery({{ delivery.id }})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% if delivery.status in 'assigned,picked_up,in_transit' %}
+                                <a href="{% url 'admin_update_delivery_status' delivery.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                {% endif %}
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button"
+                                            data-bs-toggle="dropdown">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="trackOrder('{{ delivery.order.barcode }}')">Track Order</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            <i class="fas fa-truck fa-2x mb-2"></i>
+                            <br>No deliveries found
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <nav aria-label="Deliveries pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active">
+                    <a class="page-link" href="#">{{ num }}</a>
+                </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}page={{ num }}">{{ num }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}page={{ page_obj.next_page_number }}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delivery Details Modal -->
+<div class="modal fade" id="deliveryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delivery Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="deliveryDetails">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mark Delivered Modal -->
+<div class="modal fade" id="deliveredModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mark Delivery as Completed</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="deliveredForm">
+                    {% csrf_token %}
+                    <input type="hidden" id="deliveryId" name="delivery_id">
+                    <div class="mb-3">
+                        <label for="rating" class="form-label">Customer Rating (Optional)</label>
+                        <select class="form-select" id="rating" name="rating">
+                            <option value="">No rating</option>
+                            <option value="1">1 Star</option>
+                            <option value="2">2 Stars</option>
+                            <option value="3">3 Stars</option>
+                            <option value="4">4 Stars</option>
+                            <option value="5">5 Stars</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="feedback" class="form-label">Customer Feedback (Optional)</label>
+                        <textarea class="form-control" id="feedback" name="feedback" rows="3"
+                                  placeholder="Any feedback from the customer..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="submitDelivered()">Mark as Delivered</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewDelivery(deliveryId) {
+    // This would typically load delivery details via AJAX
+    // For now, just show a placeholder
+    document.getElementById('deliveryDetails').innerHTML = '<p>Loading delivery details...</p>';
+    new bootstrap.Modal(document.getElementById('deliveryModal')).show();
+}
+
+function updateDeliveryStatus(deliveryId, newStatus) {
+    const statusText = newStatus.replace('_', ' ');
+    if (!confirm(`Are you sure you want to mark this delivery as "${statusText}"?`)) {
+        return;
+    }
+
+    fetch(`/api/v1/deliveries/${deliveryId}/status/`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ status: newStatus })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error updating delivery status: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating delivery status');
+    });
+}
+
+function markDelivered(deliveryId) {
+    document.getElementById('deliveryId').value = deliveryId;
+    new bootstrap.Modal(document.getElementById('deliveredModal')).show();
+}
+
+function submitDelivered() {
+    const form = document.getElementById('deliveredForm');
+    const formData = new FormData(form);
+
+    fetch('/api/v1/deliveries/delivered/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('deliveredModal')).hide();
+            location.reload();
+        } else {
+            alert('Error marking delivery as completed: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error marking delivery as completed');
+    });
+}
+
+function trackOrder(barcode) {
+    window.open(`/api/v1/track/${barcode}/`, '_blank');
+}
+</script>
+
+<style>
+/* Mobile optimizations */
+@media (max-width: 767.98px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+
+    .btn-group .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .btn-group .btn i {
+        font-size: 0.75rem;
+    }
+
+    .pagination .page-link {
+        padding: 0.375rem 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .card-header h6 {
+        font-size: 1rem;
+    }
+
+    .table td, .table th {
+        padding: 0.5rem;
+        vertical-align: middle;
+    }
+
+    /* Stack filter form on mobile */
+    .row.g-3 {
+        --bs-gutter-x: 0.5rem;
+    }
+
+    .row.g-3 .col-md-3,
+    .row.g-3 .col-md-6 {
+        margin-bottom: 1rem;
+    }
+
+    /* Make action buttons more touch-friendly */
+    .btn-group {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+
+    .dropdown-menu {
+        min-width: 120px;
+    }
+
+    /* Improve readability on small screens */
+    .table-responsive {
+        border-radius: 0.375rem;
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+    }
+
+    /* Better spacing for delivery info */
+    .table td div {
+        line-height: 1.3;
+    }
+
+    .table td small {
+        font-size: 0.75rem;
+    }
+}
+</style>
+{% endblock %}

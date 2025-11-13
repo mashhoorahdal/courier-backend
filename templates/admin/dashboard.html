@@ -1,0 +1,230 @@
+{% extends 'admin/base.html' %}
+
+{% block title %}Dashboard - Courier Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="h3 mb-0">Dashboard Overview</h1>
+        <p class="text-muted">Welcome to your courier management dashboard</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Orders
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_orders|default:0 }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-box fa-2x text-primary"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Delivered Orders
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.delivered_orders|default:0 }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle fa-2x text-success"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Total Users
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_users|default:0 }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-info"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Delivery Boys
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_delivery_boys|default:0 }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-shipping-fast fa-2x text-warning"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Orders -->
+<div class="row">
+    <div class="col-xl-8 col-lg-7">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Recent Orders</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Barcode</th>
+                                <th>Customer</th>
+                                <th>Status</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td><code>{{ order.barcode }}</code></td>
+                                <td>{{ order.customer.get_full_name|default:order.customer.username }}</td>
+                                <td>
+                                    <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'in_transit' %}primary{% elif order.status == 'cancelled' %}danger{% else %}secondary{% endif %}">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>${{ order.amount }}</td>
+                                <td>{{ order.created_at|date:"M d, Y" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">No orders yet</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-xl-4 col-lg-5">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'admin_users_create' %}" class="btn btn-primary">
+                        <i class="fas fa-user-plus me-2"></i>Add New User
+                    </a>
+                    <a href="{% url 'admin_delivery_boys_create' %}" class="btn btn-success">
+                        <i class="fas fa-shipping-fast me-2"></i>Add Delivery Boy
+                    </a>
+                    <a href="{% url 'admin_orders' %}" class="btn btn-info">
+                        <i class="fas fa-list me-2"></i>View All Orders
+                    </a>
+                    <a href="{% url 'admin_deliveries' %}" class="btn btn-warning">
+                        <i class="fas fa-route me-2"></i>Manage Deliveries
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">System Status</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="text-success mb-2">
+                            <i class="fas fa-database fa-2x"></i>
+                        </div>
+                        <small class="text-muted">Database</small>
+                        <br><span class="badge bg-success">Online</span>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-info mb-2">
+                            <i class="fas fa-server fa-2x"></i>
+                        </div>
+                        <small class="text-muted">API</small>
+                        <br><span class="badge bg-success">Running</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+.text-primary {
+    color: #5a5c69 !important;
+}
+.text-gray-800 {
+    color: #5a5c69 !important;
+}
+
+/* Mobile optimizations */
+@media (max-width: 767.98px) {
+    .card-body .row.no-gutters {
+        flex-direction: column;
+        text-align: center;
+    }
+    .card-body .col.mr-2 {
+        margin-bottom: 0.5rem;
+    }
+    .card-body .col-auto {
+        margin-top: 0.5rem;
+    }
+    .stats-card .h5 {
+        font-size: 1.5rem;
+    }
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+    .card-header h6 {
+        font-size: 1rem;
+    }
+}
+</style>
+{% endblock %}
