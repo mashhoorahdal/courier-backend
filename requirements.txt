@@ -21,6 +21,10 @@ djangorestframework-simplejwt==5.5.1 \
     --hash=sha256:2c30f3707053d384e9f315d11c2daccfcb548d4faa453111ca19a542b732e469 \
     --hash=sha256:e72c5572f51d7803021288e2057afcbd03f17fe11d484096f40a460abc76e87f
     # via courier-backend
+whitenoise==6.7.0 \
+    --hash=sha256:58c7a6cd163a55dec8bd41547749b07ea262e7a4f814ea4b4fb7bdc4c6d9409a \
+    --hash=sha256:d239d0ba1b3c63a1c3a380d0fd5956335d1fa0e2b8d1ef4a2fbd2d943ee94d80
+    # via courier-backend
 gunicorn==23.0.0 \
     --hash=sha256:ec400d38950de4dfd418cff8328b2c8faed0edb0d517d3394e457c317908ca4d \
     --hash=sha256:f014447a0101dc57e294f6c18ca6b40227a4c90e9bdb586042628030cba004ec

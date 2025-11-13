@@ -28,4 +28,4 @@ EXPOSE 8000
 ENV DJANGO_SETTINGS_MODULE=courier_backend.settings
 ENV PYTHONUNBUFFERED=1
 
-CMD ["bash", "-c", "python manage.py migrate && gunicorn courier_backend.wsgi:application --bind 0.0.0.0:$PORT --workers 3"]
+CMD ["bash", "-c", "python manage.py collectstatic --noinput && python manage.py migrate && gunicorn courier_backend.wsgi:application --bind 0.0.0.0:$PORT --workers 3"]
